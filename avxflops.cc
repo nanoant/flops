@@ -3,6 +3,7 @@
 //   http://stackoverflow.com/questions/8389648/how-to-achieve-4-flops-per-cycle
 
 #include <stdint.h>
+#include <stdlib.h>
 #include <iostream>
 using namespace std;
 
