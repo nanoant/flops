@@ -1,8 +1,6 @@
 // x86 SSE FLOPs counter
 // Based on:
 //   http://stackoverflow.com/questions/8389648/how-to-achieve-4-flops-per-cycle
-// Build with:
-//   g++ -O3 -fopenmp -march=native -o sseflops sseflops.cc
 
 #include <stdint.h>
 #include <iostream>
