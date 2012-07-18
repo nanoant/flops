@@ -8,8 +8,15 @@
 #include "openmp.h"
 using namespace std;
 
+#ifdef __AVX__
 #define SIMD 4
-typedef double float_t;
+#else
+#define SIMD 2
+#endif
+
+typedef double   float_t;
+typedef int64_t  int_t;
+typedef uint64_t uint_t;
 
 #define dupn(num)   dup ## num
 #define dup(x, num) dupn(num)(x)
@@ -21,46 +28,35 @@ typedef double float_t;
 #define dup32(x) dup16(x), dup16(x)
 #define dup64(x) dup32(x), dup32(x)
 
-#if __clang__
-
-typedef float_t   simd_t __attribute__((ext_vector_type(SIMD)));
-typedef uint64_t isimd_t __attribute__((ext_vector_type(SIMD)));
-#define simd_t(x)   (simd_t)((float_t)x)
-#define isimd_t(x) (isimd_t)((float_t)x)
-
-#else
-
-#define VSIMD SIMD*sizeof(float_t)
-typedef float_t   simd_t __attribute__((vector_size(VSIMD)));
-typedef uint64_t isimd_t __attribute__((vector_size(VSIMD)));
-#define simd_t(x)   (simd_t){dup((float_t)x, SIMD)}
-#define isimd_t(x) (isimd_t){dup((uint64_t)x, SIMD)}
-
-#endif
+typedef float_t fvec_t __attribute__((vector_size((SIMD)*sizeof(float_t))));
+typedef int_t   ivec_t __attribute__((vector_size((SIMD)*sizeof(int_t))));
+typedef uint_t  uvec_t __attribute__((vector_size((SIMD)*sizeof(uint_t))));
+#define fvec_t(x) (fvec_t){ dup((float_t)x, SIMD) }
+#define uvec_t(x) (uvec_t){ dup( (uint_t)x, SIMD) }
 
 float_t test_dp_mac_gen(float_t x,float_t y,size_t iterations){
-	register simd_t r0,r1,r2,r3,r4,r5,r6,r7,r8,r9,rA,rB,rC,rD,rE,rF;
+	register fvec_t r0,r1,r2,r3,r4,r5,r6,r7,r8,r9,rA,rB,rC,rD,rE,rF;
 
 	// Generate starting data.
-	r0 = simd_t( x);
-	r1 = simd_t( y);
-	r2 = simd_t( y);
-	r3 = simd_t( 1.0);
-	r4 = simd_t(-1.0);
-	r5 = simd_t( 1.0);
-	r6 = simd_t(-1.0);
-	r7 = simd_t( 1.0);
-	r8 = simd_t(-1.0);
-	r9 = simd_t( 1.0);
-	rA = simd_t(-1.0);
-	rB = simd_t( 1.0);
-	rC = simd_t(-x);
-	rD = simd_t( x);
-	rE = simd_t(-y);
-	rF = simd_t( y);
+	r0 = fvec_t( x);
+	r1 = fvec_t( y);
+	r2 = fvec_t( y);
+	r3 = fvec_t( 1.0);
+	r4 = fvec_t(-1.0);
+	r5 = fvec_t( 1.0);
+	r6 = fvec_t(-1.0);
+	r7 = fvec_t( 1.0);
+	r8 = fvec_t(-1.0);
+	r9 = fvec_t( 1.0);
+	rA = fvec_t(-1.0);
+	rB = fvec_t( 1.0);
+	rC = fvec_t(-x);
+	rD = fvec_t( x);
+	rE = fvec_t(-y);
+	rF = fvec_t( y);
 
-	isimd_t MASK = isimd_t(0x800fffffffffffffull);
-	isimd_t vONE = (isimd_t)simd_t(1.0);
+	uvec_t MASK = uvec_t(0x800fffffffffffffull);
+	uvec_t vONE = (uvec_t)fvec_t(1.0);
 
 	size_t c = 0;
 	while (c < iterations){
@@ -123,30 +119,30 @@ float_t test_dp_mac_gen(float_t x,float_t y,size_t iterations){
 		}
 
 		//  Need to renormalize to prevent denormal/overflow.
-		r0 = (simd_t)((isimd_t)r0 & MASK);
-		r1 = (simd_t)((isimd_t)r1 & MASK);
-		r2 = (simd_t)((isimd_t)r2 & MASK);
-		r3 = (simd_t)((isimd_t)r3 & MASK);
-		r4 = (simd_t)((isimd_t)r4 & MASK);
-		r5 = (simd_t)((isimd_t)r5 & MASK);
-		r6 = (simd_t)((isimd_t)r6 & MASK);
-		r7 = (simd_t)((isimd_t)r7 & MASK);
-		r8 = (simd_t)((isimd_t)r8 & MASK);
-		r9 = (simd_t)((isimd_t)r9 & MASK);
-		rA = (simd_t)((isimd_t)rA & MASK);
-		rB = (simd_t)((isimd_t)rB & MASK);
-		r0 = (simd_t)((isimd_t)r0 | vONE);
-		r1 = (simd_t)((isimd_t)r1 | vONE);
-		r2 = (simd_t)((isimd_t)r2 | vONE);
-		r3 = (simd_t)((isimd_t)r3 | vONE);
-		r4 = (simd_t)((isimd_t)r4 | vONE);
-		r5 = (simd_t)((isimd_t)r5 | vONE);
-		r6 = (simd_t)((isimd_t)r6 | vONE);
-		r7 = (simd_t)((isimd_t)r7 | vONE);
-		r8 = (simd_t)((isimd_t)r8 | vONE);
-		r9 = (simd_t)((isimd_t)r9 | vONE);
-		rA = (simd_t)((isimd_t)rA | vONE);
-		rB = (simd_t)((isimd_t)rB | vONE);
+		r0 = (fvec_t)((uvec_t)r0 & MASK);
+		r1 = (fvec_t)((uvec_t)r1 & MASK);
+		r2 = (fvec_t)((uvec_t)r2 & MASK);
+		r3 = (fvec_t)((uvec_t)r3 & MASK);
+		r4 = (fvec_t)((uvec_t)r4 & MASK);
+		r5 = (fvec_t)((uvec_t)r5 & MASK);
+		r6 = (fvec_t)((uvec_t)r6 & MASK);
+		r7 = (fvec_t)((uvec_t)r7 & MASK);
+		r8 = (fvec_t)((uvec_t)r8 & MASK);
+		r9 = (fvec_t)((uvec_t)r9 & MASK);
+		rA = (fvec_t)((uvec_t)rA & MASK);
+		rB = (fvec_t)((uvec_t)rB & MASK);
+		r0 = (fvec_t)((uvec_t)r0 | vONE);
+		r1 = (fvec_t)((uvec_t)r1 | vONE);
+		r2 = (fvec_t)((uvec_t)r2 | vONE);
+		r3 = (fvec_t)((uvec_t)r3 | vONE);
+		r4 = (fvec_t)((uvec_t)r4 | vONE);
+		r5 = (fvec_t)((uvec_t)r5 | vONE);
+		r6 = (fvec_t)((uvec_t)r6 | vONE);
+		r7 = (fvec_t)((uvec_t)r7 | vONE);
+		r8 = (fvec_t)((uvec_t)r8 | vONE);
+		r9 = (fvec_t)((uvec_t)r9 | vONE);
+		rA = (fvec_t)((uvec_t)rA | vONE);
+		rB = (fvec_t)((uvec_t)rB | vONE);
 
 		c++;
 	}
