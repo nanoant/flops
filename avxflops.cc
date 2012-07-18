@@ -151,7 +151,7 @@ double test_dp_mac_AVX(double x,double y,size_t iterations){
 void test_dp_mac_AVX(int tds,size_t iterations){
 
 	double *sum = (double*)malloc(tds * sizeof(double));
-	double start = omp_get_wtime();
+	double start = get_wtime();
 
 #pragma omp parallel num_threads(tds)
 	{
@@ -159,7 +159,7 @@ void test_dp_mac_AVX(int tds,size_t iterations){
 		sum[omp_get_thread_num()] = ret;
 	}
 
-	double secs = omp_get_wtime() - start;
+	double secs = get_wtime() - start;
 	uint64_t ops = 48 * 1000 * iterations * tds * 4;
 	cout << "Seconds = " << secs << endl;
 	cout << "FP Ops  = " << ops << endl;

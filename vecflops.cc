@@ -169,7 +169,7 @@ float_t test_dp_mac_gen(float_t x,float_t y,size_t iterations){
 void test_dp_mac_gen(int tds,size_t iterations){
 
 	float_t *sum = (float_t*)malloc(tds * sizeof(float_t));
-	float_t start = omp_get_wtime();
+	float_t start = get_wtime();
 
 #pragma omp parallel num_threads(tds)
 	{
@@ -177,7 +177,7 @@ void test_dp_mac_gen(int tds,size_t iterations){
 		sum[omp_get_thread_num()] = ret;
 	}
 
-	float_t secs = omp_get_wtime() - start;
+	float_t secs = get_wtime() - start;
 	uint64_t ops = 48 * 1000 * iterations * tds * 4;
 	cout << "Seconds = " << secs << endl;
 	cout << "FP Ops  = " << ops << endl;
