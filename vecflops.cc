@@ -8,15 +8,34 @@
 #include "openmp.h"
 using namespace std;
 
+// define 1 to get single precision and 2x flops boost
+#define SINGLE_PRECISION 0
+
+#if SINGLE_PRECISION
+
+#ifdef __AVX__
+#define SIMD 8
+#else
+#define SIMD 4
+#endif
+typedef float   float_t;
+typedef int32_t  int_t;
+typedef uint32_t uint_t;
+#define OVERFLOW_MASK 0x80fffffu
+
+#else
+
 #ifdef __AVX__
 #define SIMD 4
 #else
 #define SIMD 2
 #endif
-
 typedef double   float_t;
 typedef int64_t  int_t;
 typedef uint64_t uint_t;
+#define OVERFLOW_MASK 0x800fffffffffffffull
+
+#endif
 
 #define dupn(num)   dup ## num
 #define dup(x, num) dupn(num)(x)
@@ -55,7 +74,7 @@ float_t test_dp_mac_gen(float_t x,float_t y,size_t iterations){
 	rE = fvec_t(-y);
 	rF = fvec_t( y);
 
-	uvec_t MASK = uvec_t(0x800fffffffffffffull);
+	uvec_t MASK = uvec_t(OVERFLOW_MASK);
 	uvec_t vONE = (uvec_t)fvec_t(1.0);
 
 	size_t c = 0;
@@ -178,7 +197,7 @@ void test_dp_mac_gen(int tds,size_t iterations){
 	}
 
 	float_t secs = get_wtime() - start;
-	uint64_t ops = 48 * 1000 * iterations * tds * 4;
+	uint64_t ops = 48 * 1000 * iterations * tds * SIMD;
 	cout << "Seconds = " << secs << endl;
 	cout << "FP Ops  = " << ops << endl;
 	cout << "GFLOPs  = " << ops / 1e9 / secs << endl;
